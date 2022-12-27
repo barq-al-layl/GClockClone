@@ -42,7 +42,13 @@ class TimerViewModel @Inject constructor(
 		isNotBlank && !paused
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+	private val baseDuration = MutableStateFlow(0.seconds)
+
 	private val timerDuration = MutableStateFlow<Duration?>(null)
+
+	val timerProgress = timerDuration.combine(baseDuration) { timer, base ->
+			timer?.div(base)?.toFloat() ?: 0f
+	}.stateIn(viewModelScope, SharingStarted.Eagerly, 1f)
 
 	private val _timerLabel = MutableStateFlow("")
 	val timerLabel = _timerLabel.asStateFlow()
@@ -76,6 +82,7 @@ class TimerViewModel @Inject constructor(
 					minutes.value.toInt().minutes +
 					seconds.value.toInt().seconds
 		}
+		baseDuration.update { timerDuration.value ?: 0.seconds }
 		timerString.update { "0".repeat(6) }
 		_timerLabel.update {
 			timerDuration.value?.toComponents { hours, minutes, seconds, _ ->
@@ -112,8 +119,9 @@ class TimerViewModel @Inject constructor(
 	}
 
 	fun addMinute() {
+		baseDuration.update { it + 1.minutes }
 		timerDuration.update { duration ->
-			(duration?.takeIf { it.isPositive() } ?: Duration.parse(timerLabel.value)) + 1.minutes
+			duration?.takeIf { it.isPositive() }?.plus(1.minutes) ?: baseDuration.value
 		}
 	}
 

@@ -19,6 +19,7 @@ fun ActiveTimerCard(
 	label: String,
 	time: String,
 	isPaused: Boolean,
+	progress: Float,
 	onStop: () -> Unit,
 	onAddMinute: () -> Unit,
 	onPause: () -> Unit,
@@ -52,10 +53,19 @@ fun ActiveTimerCard(
 					Icon(imageVector = Icons.Default.Close, contentDescription = null)
 				}
 			}
-			Text(
-				text = time,
-				fontSize = 48.sp,
-			)
+			Box(contentAlignment = Alignment.Center) {
+				CircularProgressIndicator(
+					progress = progress,
+					modifier = Modifier.size(300.dp),
+					color = MaterialTheme.colorScheme.primary,
+					strokeWidth = 10.dp,
+
+					)
+				Text(
+					text = time,
+					fontSize = 48.sp,
+				)
+			}
 			Row(
 				horizontalArrangement = Arrangement.spacedBy(16.dp),
 			) {
