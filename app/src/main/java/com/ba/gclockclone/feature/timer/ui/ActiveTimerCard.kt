@@ -13,6 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +36,9 @@ fun ActiveTimerCard(
 		targetValue = progress,
 		animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
 	)
+	val indicatorColor = if (isFinished) MaterialTheme.colorScheme.surface
+	else MaterialTheme.colorScheme.primary
+
 	ElevatedCard(
 		modifier = modifier,
 		shape = MaterialTheme.shapes.extraLarge,
@@ -68,14 +74,24 @@ fun ActiveTimerCard(
 					}
 				}
 			}
-			Box(contentAlignment = Alignment.Center) {
-				CircularProgressIndicator(
-					progress = if (isFinished) 1f else progressIndicator,
-					modifier = Modifier.size(300.dp),
-					color = if (isFinished) MaterialTheme.colorScheme.surface
-					else MaterialTheme.colorScheme.primary,
-					strokeWidth = 10.dp,
-				)
+			Box(
+				modifier = Modifier
+					.size(300.dp)
+					.drawBehind {
+						drawArc(
+							color = indicatorColor,
+							startAngle = 270f,
+							sweepAngle = progressIndicator * 360f,
+							useCenter = false,
+							size = size,
+							style = Stroke(
+								width = 10.dp.toPx(),
+								cap = StrokeCap.Round,
+							),
+						)
+					},
+				contentAlignment = Alignment.Center,
+			) {
 				Text(
 					text = time,
 					fontSize = 48.sp,
