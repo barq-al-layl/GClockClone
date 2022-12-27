@@ -28,6 +28,7 @@ fun TimerScreen(
 	val formattedDuration by viewModel.formattedDuration.collectAsState()
 	val isPaused by viewModel.isPaused.collectAsState()
 	val timerProgress by viewModel.timerProgress.collectAsState()
+	val isFinished by viewModel.finished.collectAsState()
 
 	Scaffold(
 		floatingActionButtonPosition = FabPosition.Center,
@@ -87,6 +88,7 @@ fun TimerScreen(
 				label = label,
 				time = formattedDuration,
 				isPaused = isPaused,
+				isFinished = isFinished,
 				progress = timerProgress,
 				onStop = viewModel::stopTimer,
 				onAddMinute = viewModel::addMinute,

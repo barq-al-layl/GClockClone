@@ -41,13 +41,13 @@ class TimerViewModel @Inject constructor(
 	}.combine(isPaused) { isNotBlank, paused ->
 		isNotBlank && !paused
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
 	private val baseDuration = MutableStateFlow(0.seconds)
 
 	private val timerDuration = MutableStateFlow<Duration?>(null)
 
 	val timerProgress = timerDuration.combine(baseDuration) { timer, base ->
-			timer?.div(base)?.toFloat() ?: 0f
+		val res = timer?.div(base)?.toFloat()
+		res?.takeIf { it > 0f } ?: 0f
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, 1f)
 
 	private val _timerLabel = MutableStateFlow("")
@@ -73,6 +73,10 @@ class TimerViewModel @Inject constructor(
 			}
 		} ?: ""
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+	val finished = formattedDuration.map {
+		it.contains('-')
+	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
 	private var job: Job? = null
 

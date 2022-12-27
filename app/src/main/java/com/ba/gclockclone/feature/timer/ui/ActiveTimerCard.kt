@@ -1,5 +1,8 @@
 package com.ba.gclockclone.feature.timer.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -7,6 +10,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,14 +23,23 @@ fun ActiveTimerCard(
 	label: String,
 	time: String,
 	isPaused: Boolean,
+	isFinished: Boolean,
 	progress: Float,
 	onStop: () -> Unit,
 	onAddMinute: () -> Unit,
 	onPause: () -> Unit,
 ) {
+	val progressIndicator by animateFloatAsState(
+		targetValue = progress,
+		animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
+	)
 	ElevatedCard(
 		modifier = modifier,
 		shape = MaterialTheme.shapes.extraLarge,
+		colors = CardDefaults.elevatedCardColors(
+			containerColor = if (isFinished) MaterialTheme.colorScheme.primary
+			else MaterialTheme.colorScheme.surface
+		),
 	) {
 		Column(
 			modifier = Modifier
@@ -44,23 +57,25 @@ fun ActiveTimerCard(
 					fontSize = 24.sp,
 					fontWeight = FontWeight.W500,
 				)
-				IconButton(
-					onClick = onStop,
-					colors = IconButtonDefaults.iconButtonColors(
-						containerColor = MaterialTheme.colorScheme.secondaryContainer,
-					),
-				) {
-					Icon(imageVector = Icons.Default.Close, contentDescription = null)
+				if (!isFinished) {
+					IconButton(
+						onClick = onStop,
+						colors = IconButtonDefaults.iconButtonColors(
+							containerColor = MaterialTheme.colorScheme.secondaryContainer,
+						),
+					) {
+						Icon(imageVector = Icons.Default.Close, contentDescription = null)
+					}
 				}
 			}
 			Box(contentAlignment = Alignment.Center) {
 				CircularProgressIndicator(
-					progress = progress,
+					progress = if (isFinished) 1f else progressIndicator,
 					modifier = Modifier.size(300.dp),
-					color = MaterialTheme.colorScheme.primary,
+					color = if (isFinished) MaterialTheme.colorScheme.surface
+					else MaterialTheme.colorScheme.primary,
 					strokeWidth = 10.dp,
-
-					)
+				)
 				Text(
 					text = time,
 					fontSize = 48.sp,
@@ -87,7 +102,8 @@ fun ActiveTimerCard(
 					modifier = Modifier.size(width = 140.dp, height = 80.dp),
 					onClick = onPause,
 					colors = ButtonDefaults.buttonColors(
-						containerColor = MaterialTheme.colorScheme.tertiary,
+						containerColor = if (isFinished) MaterialTheme.colorScheme.onTertiaryContainer
+						else MaterialTheme.colorScheme.tertiary,
 					),
 				) {
 					Icon(
