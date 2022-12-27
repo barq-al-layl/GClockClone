@@ -1,5 +1,7 @@
 package com.ba.gclockclone.feature.timer.ui
 
+import android.app.Application
+import android.media.RingtoneManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,9 +17,12 @@ import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class TimerViewModel @Inject constructor(
-
+	context: Application,
 ) : ViewModel() {
-
+	private val ringtone = RingtoneManager.getRingtone(
+		context,
+		RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+	)
 	private val timerString = MutableStateFlow("0".repeat(6))
 
 	val seconds = timerString.map {
@@ -76,6 +81,10 @@ class TimerViewModel @Inject constructor(
 
 	val finished = formattedDuration.map {
 		it.contains('-')
+	}.onEach {
+		if (!ringtone.isPlaying && it) {
+			ringtone.play()
+		}
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
 	private var job: Job? = null
@@ -120,6 +129,7 @@ class TimerViewModel @Inject constructor(
 		job?.cancel()
 		job = null
 		timerDuration.update { null }
+		ringtone.stop()
 		if (isPaused.value) {
 			_isPaused.update { false }
 		}
@@ -137,6 +147,7 @@ class TimerViewModel @Inject constructor(
 			stopTimer()
 			return
 		}
+		ringtone.stop()
 		timerString.update {
 			job?.cancel()
 			job = null
