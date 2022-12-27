@@ -120,6 +120,9 @@ class TimerViewModel @Inject constructor(
 		job?.cancel()
 		job = null
 		timerDuration.update { null }
+		if (isPaused.value) {
+			_isPaused.update { false }
+		}
 	}
 
 	fun addMinute() {
