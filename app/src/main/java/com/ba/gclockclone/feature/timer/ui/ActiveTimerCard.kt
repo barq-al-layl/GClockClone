@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,8 +37,8 @@ fun ActiveTimerCard(
 		targetValue = progress,
 		animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
 	)
-	val indicatorColor = if (isFinished) MaterialTheme.colorScheme.surface
-	else MaterialTheme.colorScheme.primary
+	val indicatorColor = MaterialTheme.colorScheme.primary
+	val indicatorBackground = MaterialTheme.colorScheme.secondaryContainer
 
 	ElevatedCard(
 		modifier = modifier,
@@ -78,17 +79,23 @@ fun ActiveTimerCard(
 				modifier = Modifier
 					.size(300.dp)
 					.drawBehind {
-						drawArc(
-							color = indicatorColor,
-							startAngle = 270f,
-							sweepAngle = progressIndicator * 360f,
-							useCenter = false,
-							size = size,
-							style = Stroke(
-								width = 10.dp.toPx(),
-								cap = StrokeCap.Round,
-							),
+						drawCircle(
+							color = indicatorBackground,
+							style = Stroke(width = 10.dp.toPx()),
 						)
+						if (!isFinished) {
+							drawArc(
+								color = indicatorColor,
+								startAngle = 270f,
+								sweepAngle = progressIndicator * 360f,
+								useCenter = false,
+								size = size,
+								style = Stroke(
+									width = 10.dp.toPx(),
+									cap = StrokeCap.Round,
+								),
+							)
+						}
 					},
 				contentAlignment = Alignment.Center,
 			) {
@@ -123,8 +130,11 @@ fun ActiveTimerCard(
 					),
 				) {
 					Icon(
-						imageVector = if (isPaused) Icons.Default.PlayArrow
-						else Icons.Default.Pause,
+						imageVector = when {
+							isFinished -> Icons.Default.Stop
+							isPaused -> Icons.Default.PlayArrow
+							else -> Icons.Default.Pause
+						},
 						contentDescription = null,
 					)
 				}
