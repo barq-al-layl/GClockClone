@@ -1,9 +1,10 @@
 package com.ba.gclockclone.feature.timer.ui
 
 import android.app.Application
-import android.media.RingtoneManager
+import android.media.MediaPlayer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ba.gclockclone.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,10 +20,8 @@ import kotlin.time.Duration.Companion.seconds
 class TimerViewModel @Inject constructor(
 	context: Application,
 ) : ViewModel() {
-	private val ringtone = RingtoneManager.getRingtone(
-		context,
-		RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
-	)
+
+	private val mediaPlayer = MediaPlayer.create(context, R.raw.rooster)
 
 	private val timerDuration = MutableStateFlow<Duration?>(null)
 	private val baseDuration = MutableStateFlow(0.seconds)
@@ -74,7 +73,7 @@ class TimerViewModel @Inject constructor(
 				if (isNotEmpty() && seconds < 10) append(0)
 				append(seconds)
 				if (timerDuration.value?.isNegative() == true) {
-					insert(0, "- ")
+					insert(0, "-")
 				}
 			}
 		} ?: ""
@@ -83,9 +82,10 @@ class TimerViewModel @Inject constructor(
 	val finished = timerDuration.map {
 		it == 0.seconds || it?.isNegative() == true
 	}.onEach {
-		if (!ringtone.isPlaying && it) {
-			ringtone.play()
+		if (!mediaPlayer.isPlaying && it) {
+			mediaPlayer.start()
 		}
+
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
 	private var remainingDuration = 0.seconds
@@ -133,7 +133,7 @@ class TimerViewModel @Inject constructor(
 		job = null
 		remainingDuration = 0.seconds
 		timerDuration.update { null }
-		ringtone.stop()
+		mediaPlayer.stop()
 		if (isPaused.value) {
 			_isPaused.update { false }
 		}
@@ -151,7 +151,7 @@ class TimerViewModel @Inject constructor(
 			stopTimer()
 			return
 		}
-		ringtone.stop()
+		mediaPlayer.stop()
 		job?.cancel()
 		remainingDuration = timerDuration.value!!
 		_isPaused.update { true }
