@@ -1,7 +1,10 @@
 package com.ba.gclockclone.feature.timer.ui
 
+import android.app.Application
+import android.media.MediaPlayer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ba.gclockclone.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -15,8 +18,16 @@ import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class TimerViewModel @Inject constructor(
-
+	context: Application,
 ) : ViewModel() {
+
+	private val mediaPlayer = MediaPlayer.create(context, R.raw.rooster)
+
+	private val timerDuration = MutableStateFlow<Duration?>(null)
+	private val baseDuration = MutableStateFlow(0.seconds)
+
+	private val _timerLabel = MutableStateFlow("")
+	val timerLabel = _timerLabel.asStateFlow()
 
 	private val timerString = MutableStateFlow("0".repeat(6))
 
@@ -42,10 +53,10 @@ class TimerViewModel @Inject constructor(
 		isNotBlank && !paused
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-	private val timerDuration = MutableStateFlow<Duration?>(null)
-
-	private val _timerLabel = MutableStateFlow("")
-	val timerLabel = _timerLabel.asStateFlow()
+	val timerProgress = timerDuration.combine(baseDuration) { timer, base ->
+		val res = timer?.minus(1.seconds)?.div(base)?.toFloat()
+		res?.takeIf { it > 0f } ?: 0f
+	}.stateIn(viewModelScope, SharingStarted.Eagerly, 1f)
 
 	val formattedDuration = timerDuration.map {
 		timerDuration.value?.absoluteValue?.toComponents { hours, minutes, seconds, _ ->
@@ -62,11 +73,22 @@ class TimerViewModel @Inject constructor(
 				if (isNotEmpty() && seconds < 10) append(0)
 				append(seconds)
 				if (timerDuration.value?.isNegative() == true) {
-					insert(0, "- ")
+					insert(0, "-")
 				}
 			}
 		} ?: ""
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+	val finished = timerDuration.map {
+		it == 0.seconds || it?.isNegative() == true
+	}.onEach {
+		if (!mediaPlayer.isPlaying && it) {
+			mediaPlayer.start()
+		}
+
+	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+	private var remainingDuration = 0.seconds
 
 	private var job: Job? = null
 
@@ -76,6 +98,7 @@ class TimerViewModel @Inject constructor(
 					minutes.value.toInt().minutes +
 					seconds.value.toInt().seconds
 		}
+		baseDuration.update { timerDuration.value ?: 0.seconds }
 		timerString.update { "0".repeat(6) }
 		_timerLabel.update {
 			timerDuration.value?.toComponents { hours, minutes, seconds, _ ->
@@ -108,43 +131,34 @@ class TimerViewModel @Inject constructor(
 	fun stopTimer() {
 		job?.cancel()
 		job = null
+		remainingDuration = 0.seconds
 		timerDuration.update { null }
+		mediaPlayer.stop()
+		if (isPaused.value) {
+			_isPaused.update { false }
+		}
 	}
 
 	fun addMinute() {
+		baseDuration.update { it + 1.minutes }
 		timerDuration.update { duration ->
-			(duration?.takeIf { it.isPositive() } ?: Duration.parse(timerLabel.value)) + 1.minutes
+			duration?.takeIf { it.isPositive() }?.plus(1.minutes) ?: baseDuration.value
 		}
 	}
 
 	fun pauseTimer() {
-		if (timerDuration.value?.isNegative() == true) {
+		if (timerDuration.value == 0.seconds || timerDuration.value?.isNegative() == true) {
 			stopTimer()
 			return
 		}
-		timerString.update {
-			job?.cancel()
-			job = null
-			timerDuration.value?.toComponents { hours, minutes, seconds, _ ->
-				buildString {
-					if (hours < 10) append("0")
-					append(hours)
-					if (minutes < 10) append("0")
-					append(minutes)
-					if (seconds < 10) append("0")
-					append(seconds)
-				}
-			} ?: "0".repeat(6)
-		}
+		mediaPlayer.stop()
+		job?.cancel()
+		remainingDuration = timerDuration.value!!
 		_isPaused.update { true }
 	}
 
 	fun resumeTimer() {
-		timerDuration.update {
-			hours.value.toInt().hours +
-					minutes.value.toInt().minutes +
-					seconds.value.toInt().seconds
-		}
+		timerDuration.update { remainingDuration }
 		timerString.update { "0".repeat(6) }
 		val oneSecond = 1.seconds
 		job?.cancel()
