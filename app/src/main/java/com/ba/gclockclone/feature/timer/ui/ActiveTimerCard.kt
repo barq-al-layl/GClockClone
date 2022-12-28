@@ -1,7 +1,7 @@
 package com.ba.gclockclone.feature.timer.ui
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -11,7 +11,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -33,12 +34,16 @@ fun ActiveTimerCard(
 	onAddMinute: () -> Unit,
 	onPause: () -> Unit,
 ) {
-	val progressIndicator by animateFloatAsState(
-		targetValue = progress,
-		animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
-	)
+	val progressIndicator = remember { Animatable(initialValue = 1f) }
 	val indicatorColor = MaterialTheme.colorScheme.primary
 	val indicatorBackground = MaterialTheme.colorScheme.secondaryContainer
+
+	LaunchedEffect(progress) {
+		progressIndicator.animateTo(
+			targetValue = progress,
+			animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
+		)
+	}
 
 	ElevatedCard(
 		modifier = modifier,
@@ -87,7 +92,7 @@ fun ActiveTimerCard(
 							drawArc(
 								color = indicatorColor,
 								startAngle = 270f,
-								sweepAngle = progressIndicator * 360f,
+								sweepAngle = progressIndicator.value * 360f,
 								useCenter = false,
 								size = size,
 								style = Stroke(

@@ -23,6 +23,13 @@ class TimerViewModel @Inject constructor(
 		context,
 		RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
 	)
+
+	private val timerDuration = MutableStateFlow<Duration?>(null)
+	private val baseDuration = MutableStateFlow(0.seconds)
+
+	private val _timerLabel = MutableStateFlow("")
+	val timerLabel = _timerLabel.asStateFlow()
+
 	private val timerString = MutableStateFlow("0".repeat(6))
 
 	val seconds = timerString.map {
@@ -46,17 +53,11 @@ class TimerViewModel @Inject constructor(
 	}.combine(isPaused) { isNotBlank, paused ->
 		isNotBlank && !paused
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-	private val baseDuration = MutableStateFlow(0.seconds)
-
-	private val timerDuration = MutableStateFlow<Duration?>(null)
 
 	val timerProgress = timerDuration.combine(baseDuration) { timer, base ->
-		val res = timer?.div(base)?.toFloat()
+		val res = timer?.minus(1.seconds)?.div(base)?.toFloat()
 		res?.takeIf { it > 0f } ?: 0f
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, 1f)
-
-	private val _timerLabel = MutableStateFlow("")
-	val timerLabel = _timerLabel.asStateFlow()
 
 	val formattedDuration = timerDuration.map {
 		timerDuration.value?.absoluteValue?.toComponents { hours, minutes, seconds, _ ->
@@ -79,13 +80,15 @@ class TimerViewModel @Inject constructor(
 		} ?: ""
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
-	val finished = formattedDuration.map {
-		it.contains('-')
+	val finished = timerDuration.map {
+		it == 0.seconds || it?.isNegative() == true
 	}.onEach {
 		if (!ringtone.isPlaying && it) {
 			ringtone.play()
 		}
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+	private var remainingDuration = 0.seconds
 
 	private var job: Job? = null
 
@@ -128,6 +131,7 @@ class TimerViewModel @Inject constructor(
 	fun stopTimer() {
 		job?.cancel()
 		job = null
+		remainingDuration = 0.seconds
 		timerDuration.update { null }
 		ringtone.stop()
 		if (isPaused.value) {
@@ -143,34 +147,18 @@ class TimerViewModel @Inject constructor(
 	}
 
 	fun pauseTimer() {
-		if (timerDuration.value?.isNegative() == true) {
+		if (timerDuration.value == 0.seconds || timerDuration.value?.isNegative() == true) {
 			stopTimer()
 			return
 		}
 		ringtone.stop()
-		timerString.update {
-			job?.cancel()
-			job = null
-			timerDuration.value?.toComponents { hours, minutes, seconds, _ ->
-				buildString {
-					if (hours < 10) append("0")
-					append(hours)
-					if (minutes < 10) append("0")
-					append(minutes)
-					if (seconds < 10) append("0")
-					append(seconds)
-				}
-			} ?: "0".repeat(6)
-		}
+		job?.cancel()
+		remainingDuration = timerDuration.value!!
 		_isPaused.update { true }
 	}
 
 	fun resumeTimer() {
-		timerDuration.update {
-			hours.value.toInt().hours +
-					minutes.value.toInt().minutes +
-					seconds.value.toInt().seconds
-		}
+		timerDuration.update { remainingDuration }
 		timerString.update { "0".repeat(6) }
 		val oneSecond = 1.seconds
 		job?.cancel()
