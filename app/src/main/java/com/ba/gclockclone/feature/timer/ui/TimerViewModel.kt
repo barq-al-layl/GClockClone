@@ -24,7 +24,7 @@ class TimerViewModel @Inject constructor(
 	private val mediaPlayer = MediaPlayer.create(context, R.raw.rooster)
 
 	private val timerDuration = MutableStateFlow<Duration?>(null)
-	private val baseDuration = MutableStateFlow(0.seconds)
+	private val baseDuration = MutableStateFlow(Duration.ZERO)
 
 	private val _timerLabel = MutableStateFlow("")
 	val timerLabel = _timerLabel.asStateFlow()
@@ -79,13 +79,12 @@ class TimerViewModel @Inject constructor(
 		} ?: ""
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
-	val finished = timerDuration.map {
-		it == 0.seconds || it?.isNegative() == true
-	}.onEach {
-		if (!mediaPlayer.isPlaying && it) {
+	val finished = timerDuration.map { duration ->
+		duration == Duration.ZERO || duration?.isNegative() == true
+	}.onEach { isFinished ->
+		if (!mediaPlayer.isPlaying && isFinished) {
 			mediaPlayer.start()
 		}
-
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
 	private var remainingDuration = 0.seconds

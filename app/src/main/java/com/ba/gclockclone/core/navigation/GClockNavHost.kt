@@ -1,4 +1,4 @@
-package com.ba.gclockclone.common.navigation
+package com.ba.gclockclone.core.navigation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize

@@ -1,4 +1,4 @@
-package com.ba.gclockclone.common.theme
+package com.ba.gclockclone.core.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -3,8 +3,8 @@ package com.ba.gclockclone
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.ba.gclockclone.common.AppContent
-import com.ba.gclockclone.common.theme.GClockCloneTheme
+import com.ba.gclockclone.core.AppContent
+import com.ba.gclockclone.core.theme.GClockCloneTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
