@@ -39,10 +39,14 @@ fun ActiveTimerCard(
 	val indicatorBackground = MaterialTheme.colorScheme.secondaryContainer
 
 	LaunchedEffect(progress) {
-		progressIndicator.animateTo(
-			targetValue = progress,
-			animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
-		)
+		if (progressIndicator.value < progress) {
+			progressIndicator.snapTo(progress)
+		} else {
+			progressIndicator.animateTo(
+				targetValue = progress,
+				animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
+			)
+		}
 	}
 
 	ElevatedCard(
