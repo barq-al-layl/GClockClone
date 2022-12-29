@@ -111,8 +111,10 @@ class TimerViewModel @Inject constructor(
 						append(minutes)
 						append("m ")
 					}
-					append(seconds)
-					append("s")
+					if (seconds != 0) {
+						append(seconds)
+						append("s")
+					}
 				}
 			} ?: ""
 		}
