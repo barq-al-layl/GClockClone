@@ -21,10 +21,10 @@ class TimerViewModel @Inject constructor(
 	context: Application,
 ) : ViewModel() {
 
-	private val mediaPlayer = MediaPlayer.create(context, R.raw.rooster)
+	private val mediaPlayer = MediaPlayer.create(context, R.raw.beep_alarm)
 
 	private val timerDuration = MutableStateFlow<Duration?>(null)
-	private val baseDuration = MutableStateFlow(0.seconds)
+	private val baseDuration = MutableStateFlow(Duration.ZERO)
 
 	private val _timerLabel = MutableStateFlow("")
 	val timerLabel = _timerLabel.asStateFlow()
@@ -79,13 +79,13 @@ class TimerViewModel @Inject constructor(
 		} ?: ""
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
-	val finished = timerDuration.map {
-		it == 0.seconds || it?.isNegative() == true
-	}.onEach {
-		if (!mediaPlayer.isPlaying && it) {
+	val finished = timerDuration.map { duration ->
+		duration == Duration.ZERO || duration?.isNegative() == true
+	}.onEach { isFinished ->
+		if (!mediaPlayer.isPlaying && isFinished) {
+			mediaPlayer.seekTo(0)
 			mediaPlayer.start()
 		}
-
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
 	private var remainingDuration = 0.seconds
@@ -111,8 +111,10 @@ class TimerViewModel @Inject constructor(
 						append(minutes)
 						append("m ")
 					}
-					append(seconds)
-					append("s")
+					if (seconds != 0) {
+						append(seconds)
+						append("s")
+					}
 				}
 			} ?: ""
 		}
@@ -133,7 +135,7 @@ class TimerViewModel @Inject constructor(
 		job = null
 		remainingDuration = 0.seconds
 		timerDuration.update { null }
-		mediaPlayer.stop()
+		mediaPlayer.pause()
 		if (isPaused.value) {
 			_isPaused.update { false }
 		}
@@ -151,7 +153,7 @@ class TimerViewModel @Inject constructor(
 			stopTimer()
 			return
 		}
-		mediaPlayer.stop()
+		mediaPlayer.pause()
 		job?.cancel()
 		remainingDuration = timerDuration.value!!
 		_isPaused.update { true }

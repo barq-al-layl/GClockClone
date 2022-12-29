@@ -1,4 +1,4 @@
-package com.ba.gclockclone.common.component
+package com.ba.gclockclone.core.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
