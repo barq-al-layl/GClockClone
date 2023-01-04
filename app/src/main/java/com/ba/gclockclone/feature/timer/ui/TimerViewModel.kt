@@ -83,7 +83,6 @@ class TimerViewModel @Inject constructor(
 		duration == Duration.ZERO || duration?.isNegative() == true
 	}.onEach { isFinished ->
 		if (!mediaPlayer.isPlaying && isFinished) {
-			mediaPlayer.seekTo(0)
 			mediaPlayer.start()
 		}
 	}.stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -135,7 +134,7 @@ class TimerViewModel @Inject constructor(
 		job = null
 		remainingDuration = 0.seconds
 		timerDuration.update { null }
-		mediaPlayer.pause()
+		stopAlarm()
 		if (isPaused.value) {
 			_isPaused.update { false }
 		}
@@ -146,6 +145,7 @@ class TimerViewModel @Inject constructor(
 		timerDuration.update { duration ->
 			duration?.takeIf { it.isPositive() }?.plus(1.minutes) ?: baseDuration.value
 		}
+		stopAlarm()
 	}
 
 	fun pauseTimer() {
@@ -153,7 +153,7 @@ class TimerViewModel @Inject constructor(
 			stopTimer()
 			return
 		}
-		mediaPlayer.pause()
+		stopAlarm()
 		job?.cancel()
 		remainingDuration = timerDuration.value!!
 		_isPaused.update { true }
@@ -192,5 +192,10 @@ class TimerViewModel @Inject constructor(
 				else -> timer
 			}
 		}
+	}
+
+	private fun stopAlarm() {
+		mediaPlayer.pause()
+		mediaPlayer.seekTo(0)
 	}
 }
